@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(SOURCE_FILES
     src/log.cpp
     src/log.h
-    src/main.cpp)
+    src/main.cpp src/vk-engine.cpp src/vk-engine.h src/vk-initializers.cpp src/vk-initializers.h src/vk-types.h)
 
 # Vendors
 set(VENDOR_DIR vendor)
@@ -19,15 +19,16 @@ set(SPDLOG_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${VENDOR_DIR}/spdlog/include)
 set(GLM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${VENDOR_DIR}/glm)
 ##
 
-##vk-bootstrap
-##add_subdirectory(${VENDOR_DIR}/vk-bootstrap)
-##
+#vk-bootstrap
+add_subdirectory(${VENDOR_DIR}/vk-bootstrap)
+set(VK_BOOTSTRAP_LIB vk-bootstrap::vk-bootstrap)
+#
 
 ##sdl
 add_subdirectory(${VENDOR_DIR}/sdl)
 
 set(SDL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${VENDOR_DIR}/sdl/include)
-set(SDL_LIB SDL2::SDL2-static)
+set(SDL_LIB SDL2)
 ##
 
 ##vulkan
@@ -49,7 +50,8 @@ set(LIB_DIR
 
 set(LIB
     ${VULKAN_LIB}
-    ${SDL_LIB})
+    ${SDL_LIB}
+    ${VK_BOOTSTRAP_LIB})
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIR})
