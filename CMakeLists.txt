@@ -37,13 +37,20 @@ set(VULKAN_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${VENDOR_DIR}/vulkan/lib)
 set(VULKAN_LIB libvulkan.1.dylib libvulkan.1.3.211.dylib)
 ##
 
+## vulkan memory allocator
+add_subdirectory(${VENDOR_DIR}/vulkan-memory-allocator)
+set(VMA_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${VENDOR_DIR}/vulkan-memory-allocator/include)
+set(VMA_LIB VulkanMemoryAllocator)
+##
+
 #
 
 set(INCLUDE_DIR
     ${SPDLOG_INCLUDE_DIR}
     ${SDL_INCLUDE_DIR}
     ${VULKAN_INCLUDE_DIR}
-    ${GLM_INCLUDE_DIR})
+    ${GLM_INCLUDE_DIR}
+    ${VMA_INCLUDE_DIR})
 
 set(LIB_DIR
     ${VULKAN_LIB_DIR})
@@ -51,7 +58,8 @@ set(LIB_DIR
 set(LIB
     ${VULKAN_LIB}
     ${SDL_LIB}
-    ${VK_BOOTSTRAP_LIB})
+    ${VK_BOOTSTRAP_LIB}
+    ${VMA_LIB})
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIR})

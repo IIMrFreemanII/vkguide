@@ -10,3 +10,6 @@
 [submodule "vendor/sdl"]
 	path = vendor/sdl
 	url = https://github.com/libsdl-org/SDL
+[submodule "vendor/vulkan-memory-allocator"]
+	path = vendor/vulkan-memory-allocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
