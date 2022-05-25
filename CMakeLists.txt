@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(SOURCE_FILES
     src/log.cpp
     src/log.h
-    src/main.cpp src/vk-engine.cpp src/vk-engine.h src/vk-initializers.cpp src/vk-initializers.h src/vk-types.h)
+    src/main.cpp src/vk_engine.cpp src/vk_engine.h src/vk_initializers.cpp src/vk_initializers.h src/vk_types.h src/vk_mesh.cpp src/vk_mesh.h)
 
 # Vendors
 set(VENDOR_DIR vendor)

@@ -4,8 +4,10 @@
 #include <deque>
 #include <functional>
 
-#include "vk-types.h"
+#include "vk_types.h"
 #include "VkBootstrap.h"
+#include "vk_mem_alloc.h"
+#include "vk_mesh.h"
 
 struct DeletionQueue
 {
@@ -43,6 +45,7 @@ public:
 
 class VulkanEngine {
 public:
+  VmaAllocator _allocator;
   DeletionQueue _mainDeletionQueue;
 
   bool _isInitialized{false};
@@ -88,6 +91,9 @@ public:
   VkPipeline _trianglePipeline;
   VkPipeline _redTrianglePipeline;
 
+  VkPipeline _meshPipeline;
+  Mesh _triangleMesh;
+
 public:
   //initializes everything in the engine
   void init();
@@ -116,4 +122,8 @@ private:
 
   //loads a shader module from a spir-v file. Returns false if it errors
   bool load_shader_module(const char* filePath, VkShaderModule* outShaderModule);
+
+  void load_meshes();
+
+  void upload_mesh(Mesh& mesh);
 };
