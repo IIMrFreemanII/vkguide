@@ -1,8 +1,29 @@
 #pragma once
 
 #include <vector>
+#include <deque>
+#include <functional>
 
 #include "vk-types.h"
+#include "VkBootstrap.h"
+
+struct DeletionQueue
+{
+  std::deque<std::function<void()>> deletors;
+
+  void push_function(std::function<void()>&& function) {
+    deletors.push_back(function);
+  }
+
+  void flush() {
+    // reverse iterate the deletion queue to execute all the functions
+    for (auto it = deletors.rbegin(); it != deletors.rend(); it++) {
+      (*it)(); //call the function
+    }
+
+    deletors.clear();
+  }
+};
 
 class PipelineBuilder {
 public:
@@ -22,9 +43,12 @@ public:
 
 class VulkanEngine {
 public:
+  DeletionQueue _mainDeletionQueue;
 
   bool _isInitialized{false};
   int _frameNumber{0};
+
+  int _selectedShader{ 0 };
 
   VkExtent2D _windowExtent{
     800,
@@ -36,6 +60,7 @@ public:
   VkInstance _instance; // Vulkan library handle
   VkDebugUtilsMessengerEXT _debug_messenger; // Vulkan debug output handle
   VkPhysicalDevice _chosenGPU; // GPU chosen as the default device
+  vkb::Device vkbDevice;
   VkDevice _device; // Vulkan device for commands
   VkSurfaceKHR _surface; // Vulkan window surface
 
@@ -59,7 +84,9 @@ public:
   VkFence _renderFence;
 
   VkPipelineLayout _trianglePipelineLayout;
+
   VkPipeline _trianglePipeline;
+  VkPipeline _redTrianglePipeline;
 
 public:
   //initializes everything in the engine
