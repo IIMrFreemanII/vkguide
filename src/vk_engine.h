@@ -101,6 +101,7 @@ public:
   VkPipelineLayout _meshPipelineLayout;
   VkPipeline _meshPipeline;
   Mesh _triangleMesh;
+  Mesh _monkeyMesh;
 
 public:
   //initializes everything in the engine

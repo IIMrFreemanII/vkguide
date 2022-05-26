@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(vk_tutorial)
+project(vkguide)
 
 set(CMAKE_CXX_STANDARD 23)
 
@@ -9,6 +9,8 @@ set(SOURCE_FILES
     src/main.cpp src/vk_engine.cpp src/vk_engine.h src/vk_initializers.cpp src/vk_initializers.h src/vk_types.h src/vk_mesh.cpp src/vk_mesh.h)
 
 # Vendors
+add_subdirectory(vendor)
+
 set(VENDOR_DIR vendor)
 
 ##spdlog header only
@@ -59,7 +61,8 @@ set(LIB
     ${VULKAN_LIB}
     ${SDL_LIB}
     ${VK_BOOTSTRAP_LIB}
-    ${VMA_LIB})
+    ${VMA_LIB}
+    tinyobjloader)
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIR})
