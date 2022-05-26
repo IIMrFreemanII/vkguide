@@ -11,6 +11,19 @@
 #include "vk_types.h"
 #include "vk_mesh.h"
 
+struct Material {
+  VkPipeline pipeline;
+  VkPipelineLayout pipelineLayout;
+};
+
+struct RenderObject {
+  Mesh* mesh;
+
+  Material* material;
+
+  glm::mat4 transformMatrix;
+};
+
 struct MeshPushConstants {
   glm::vec4 data;
   // model matrix
@@ -100,14 +113,25 @@ public:
   VkSemaphore _presentSemaphore, _renderSemaphore;
   VkFence _renderFence;
 
-  VkPipelineLayout _trianglePipelineLayout;
-  VkPipeline _trianglePipeline;
-  VkPipeline _redTrianglePipeline;
+public:
+  //default array of renderable objects
+  std::vector<RenderObject> _renderables;
 
-  VkPipelineLayout _meshPipelineLayout;
-  VkPipeline _meshPipeline;
-  Mesh _triangleMesh;
-  Mesh _monkeyMesh;
+  std::unordered_map<std::string, Material> _materials;
+  std::unordered_map<std::string, Mesh> _meshes;
+  //functions
+
+  //create material and add it to the map
+  Material* create_material(VkPipeline pipeline, VkPipelineLayout layout, const std::string& name);
+
+  //returns nullptr if it can't be found
+  Material* get_material(const std::string& name);
+
+  //returns nullptr if it can't be found
+  Mesh* get_mesh(const std::string& name);
+
+  //our draw function
+  void draw_objects(VkCommandBuffer cmd, RenderObject* first, int count);
 
 public:
   //initializes everything in the engine
@@ -134,6 +158,8 @@ private:
   void init_sync_structures();
 
   void init_pipelines();
+
+  void init_scene();
 
   //loads a shader module from a spir-v file. Returns false if it errors
   bool load_shader_module(const char* filePath, VkShaderModule* outShaderModule);
