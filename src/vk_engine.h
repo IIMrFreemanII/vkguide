@@ -4,10 +4,18 @@
 #include <deque>
 #include <functional>
 
+#include <glm/glm.hpp>
+#include <VkBootstrap.h>
+#include <vk_mem_alloc.h>
+
 #include "vk_types.h"
-#include "VkBootstrap.h"
-#include "vk_mem_alloc.h"
 #include "vk_mesh.h"
+
+struct MeshPushConstants {
+  glm::vec4 data;
+  // model matrix
+  glm::mat4 render_matrix;
+};
 
 struct DeletionQueue
 {
@@ -87,10 +95,10 @@ public:
   VkFence _renderFence;
 
   VkPipelineLayout _trianglePipelineLayout;
-
   VkPipeline _trianglePipeline;
   VkPipeline _redTrianglePipeline;
 
+  VkPipelineLayout _meshPipelineLayout;
   VkPipeline _meshPipeline;
   Mesh _triangleMesh;
 
