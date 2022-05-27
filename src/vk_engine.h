@@ -11,6 +11,14 @@
 #include "vk_types.h"
 #include "vk_mesh.h"
 
+struct FrameData {
+  VkSemaphore _presentSemaphore, _renderSemaphore;
+  VkFence _renderFence;
+
+  VkCommandPool _commandPool;
+  VkCommandBuffer _mainCommandBuffer;
+};
+
 struct Material {
   VkPipeline pipeline;
   VkPipelineLayout pipelineLayout;
@@ -65,13 +73,16 @@ public:
   VkPipeline build_pipeline(VkDevice device, VkRenderPass pass);
 };
 
+//number of frames to overlap when rendering
+constexpr uint32_t FRAME_OVERLAP = 2;
+
 class VulkanEngine {
 public:
   VmaAllocator _allocator;
   DeletionQueue _mainDeletionQueue;
 
   bool _isInitialized{false};
-  int _frameNumber{0};
+  uint32_t _frameNumber{0};
 
   int _selectedShader{ 0 };
 
@@ -104,14 +115,15 @@ public:
 
   VkQueue _graphicsQueue; //queue we will submit to
   uint32_t _graphicsQueueFamily; //family of that queue
-  VkCommandPool _commandPool; //the command pool for our commands
-  VkCommandBuffer _mainCommandBuffer; //the buffer we will record into
+
+  //frame storage
+  FrameData _frames[FRAME_OVERLAP];
+
+  //getter for the frame we are rendering to right now.
+  FrameData& get_current_frame();
 
   VkRenderPass _renderPass;
   std::vector<VkFramebuffer> _framebuffers;
-
-  VkSemaphore _presentSemaphore, _renderSemaphore;
-  VkFence _renderFence;
 
 public:
   //default array of renderable objects
