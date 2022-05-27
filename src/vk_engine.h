@@ -11,6 +11,14 @@
 #include "vk_types.h"
 #include "vk_mesh.h"
 
+struct GPUSceneData {
+  glm::vec4 fogColor; // w is for exponent
+  glm::vec4 fogDistances; //x for min, y for max, zw unused.
+  glm::vec4 ambientColor;
+  glm::vec4 sunlightDirection; //w for sun power
+  glm::vec4 sunlightColor;
+};
+
 struct GPUCameraData{
   glm::mat4 view;
   glm::mat4 proj;
@@ -88,6 +96,11 @@ constexpr uint32_t FRAME_OVERLAP = 2;
 
 class VulkanEngine {
 public:
+  GPUSceneData _sceneParameters;
+  AllocatedBuffer _sceneParameterBuffer;
+
+  VkPhysicalDeviceProperties _gpuProperties;
+
   VkDescriptorSetLayout _globalSetLayout;
   VkDescriptorPool _descriptorPool;
 
@@ -196,4 +209,6 @@ private:
   AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
 
   void init_descriptors();
+
+  size_t pad_uniform_buffer_size(size_t originalSize);
 };
