@@ -11,6 +11,10 @@
 #include "vk_types.h"
 #include "vk_mesh.h"
 
+struct GPUObjectData{
+  glm::mat4 modelMatrix;
+};
+
 struct GPUSceneData {
   glm::vec4 fogColor; // w is for exponent
   glm::vec4 fogDistances; //x for min, y for max, zw unused.
@@ -35,6 +39,9 @@ struct FrameData {
   //buffer that holds a single GPUCameraData to use when rendering
   AllocatedBuffer cameraBuffer;
   VkDescriptorSet globalDescriptor;
+
+  AllocatedBuffer objectBuffer;
+  VkDescriptorSet objectDescriptor;
 };
 
 struct Material {
@@ -102,6 +109,7 @@ public:
   VkPhysicalDeviceProperties _gpuProperties;
 
   VkDescriptorSetLayout _globalSetLayout;
+  VkDescriptorSetLayout _objectSetLayout;
   VkDescriptorPool _descriptorPool;
 
   VmaAllocator _allocator;
