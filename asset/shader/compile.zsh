@@ -6,3 +6,5 @@
 
 /Users/ndiahovets/VulkanSDK/1.3.211.0/macOS/bin/glslc tri_mesh.vert -o tri_mesh.vert.spv
 /Users/ndiahovets/VulkanSDK/1.3.211.0/macOS/bin/glslc tri_mesh.frag -o tri_mesh.frag.spv
+
+/Users/ndiahovets/VulkanSDK/1.3.211.0/macOS/bin/glslc textured_lit.frag -o textured_lit.frag.spv

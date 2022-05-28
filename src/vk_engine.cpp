@@ -551,11 +551,69 @@ bool VulkanEngine::load_shader_module(const char* filePath, VkShaderModule* outS
 }
 
 void VulkanEngine::init_pipelines() {
-  //build the pipeline layout that controls the inputs/outputs of the shader
-  //we are not using descriptor sets or other systems yet, so no need to use anything other than empty default
+  VkShaderModule meshVertShader;
+  if (!load_shader_module("asset/shader/tri_mesh.vert.spv", &meshVertShader)) {
+    log::error("Error when building the triangle mesh vertex shader module");
+  } else {
+    log::info("Triangle mesh vertex shader successfully loaded");
+  }
+
+  VkShaderModule meshFragShader;
+  if (!load_shader_module("asset/shader/tri_mesh.frag.spv", &meshFragShader)) {
+    log::error("Error when building the triangle mesh fragment shader module");
+  } else {
+    log::info("Triangle mesh vertex shader successfully loaded");
+  }
+
+  VkShaderModule texturedMeshShader;
+  if (!load_shader_module("asset/shader/textured_lit.frag.spv", &texturedMeshShader))
+  {
+    log::error("Error when building the textured mesh shader");
+  }
 
   //build the stage-create-info for both vertex and fragment stages. This lets the pipeline know the shader modules per stage
   PipelineBuilder pipelineBuilder;
+
+  //add the other shaders
+  pipelineBuilder._shaderStages.push_back(
+    vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT, meshVertShader));
+  //make sure that triangleFragShader is holding the compiled colored_triangle.frag
+  pipelineBuilder._shaderStages.push_back(
+    vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_FRAGMENT_BIT, meshFragShader));
+
+  //we start from just the default empty pipeline layout info
+  VkPipelineLayoutCreateInfo mesh_pipeline_layout_info = vkinit::pipeline_layout_create_info();
+
+  //setup push constants
+  VkPushConstantRange push_constant;
+  //this push constant range starts at the beginning
+  push_constant.offset = 0;
+  //this push constant range takes up the size of a MeshPushConstants struct
+  push_constant.size = sizeof(MeshPushConstants);
+  //this push constant range is accessible only in the vertex shader
+  push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+  mesh_pipeline_layout_info.pPushConstantRanges = &push_constant;
+  mesh_pipeline_layout_info.pushConstantRangeCount = 1;
+
+  VkDescriptorSetLayout setLayouts[] = { _globalSetLayout, _objectSetLayout };
+
+  //hook the global set layout
+  mesh_pipeline_layout_info.setLayoutCount = 2;
+  mesh_pipeline_layout_info.pSetLayouts = setLayouts;
+
+  VkPipelineLayout meshPipelineLayout;
+  VK_CHECK(vkCreatePipelineLayout(_device, &mesh_pipeline_layout_info, nullptr, &meshPipelineLayout));
+
+  VkPipelineLayoutCreateInfo textured_pipeline_layout_info = mesh_pipeline_layout_info;
+  VkDescriptorSetLayout texturedSetLayouts[] = { _globalSetLayout, _objectSetLayout,_singleTextureSetLayout };
+  textured_pipeline_layout_info.setLayoutCount = 3;
+  textured_pipeline_layout_info.pSetLayouts = texturedSetLayouts;
+
+  VkPipelineLayout texturedPipeLayout;
+  VK_CHECK(vkCreatePipelineLayout(_device, &textured_pipeline_layout_info, nullptr, &texturedPipeLayout));
+
+  pipelineBuilder._pipelineLayout = meshPipelineLayout;
 
   //vertex input controls how to read vertices from vertex buffers. We aren't using it yet
   pipelineBuilder._vertexInputInfo = vkinit::vertex_input_state_create_info();
@@ -590,8 +648,6 @@ void VulkanEngine::init_pipelines() {
   //default depthtesting
   pipelineBuilder._depthStencil = vkinit::depth_stencil_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
 
-  //build the mesh pipeline
-
   VertexInputDescription vertexDescription = Vertex::get_vertex_description();
 
   //connect the pipeline builder vertex input info to the one we get from Vertex
@@ -601,67 +657,34 @@ void VulkanEngine::init_pipelines() {
   pipelineBuilder._vertexInputInfo.pVertexBindingDescriptions = vertexDescription.bindings.data();
   pipelineBuilder._vertexInputInfo.vertexBindingDescriptionCount = vertexDescription.bindings.size();
 
-  //compile mesh vertex shader
-  VkShaderModule meshVertShader;
-  if (!load_shader_module("asset/shader/tri_mesh.vert.spv", &meshVertShader)) {
-    log::error("Error when building the triangle mesh vertex shader module");
-  } else {
-    log::info("Triangle mesh vertex shader successfully loaded");
-  }
-
-  VkShaderModule meshFragShader;
-  if (!load_shader_module("asset/shader/tri_mesh.frag.spv", &meshFragShader)) {
-    log::error("Error when building the triangle mesh fragment shader module");
-  } else {
-    log::info("Triangle mesh vertex shader successfully loaded");
-  }
-
-  //add the other shaders
-  pipelineBuilder._shaderStages.push_back(
-    vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT, meshVertShader));
-
-  //make sure that triangleFragShader is holding the compiled colored_triangle.frag
-  pipelineBuilder._shaderStages.push_back(
-    vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_FRAGMENT_BIT, meshFragShader));
-
-  //we start from just the default empty pipeline layout info
-  VkPipelineLayoutCreateInfo mesh_pipeline_layout_info = vkinit::pipeline_layout_create_info();
-
-  //setup push constants
-  VkPushConstantRange push_constant;
-  //this push constant range starts at the beginning
-  push_constant.offset = 0;
-  //this push constant range takes up the size of a MeshPushConstants struct
-  push_constant.size = sizeof(MeshPushConstants);
-  //this push constant range is accessible only in the vertex shader
-  push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-  mesh_pipeline_layout_info.pPushConstantRanges = &push_constant;
-  mesh_pipeline_layout_info.pushConstantRangeCount = 1;
-
-  VkDescriptorSetLayout setLayouts[] = { _globalSetLayout, _objectSetLayout };
-
-  //hook the global set layout
-  mesh_pipeline_layout_info.setLayoutCount = 2;
-  mesh_pipeline_layout_info.pSetLayouts = setLayouts;
-
-  VkPipelineLayout meshPipelineLayout;
-  VK_CHECK(vkCreatePipelineLayout(_device, &mesh_pipeline_layout_info, nullptr, &meshPipelineLayout));
-
-  pipelineBuilder._pipelineLayout = meshPipelineLayout;
   //build the mesh triangle pipeline
   VkPipeline meshPipeline = pipelineBuilder.build_pipeline(_device, _renderPass);
 
   create_material(meshPipeline, meshPipelineLayout, "defaultmesh");
 
+  //create pipeline for textured drawing
+  pipelineBuilder._shaderStages.clear();
+  pipelineBuilder._shaderStages.push_back(
+    vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT, meshVertShader));
+  pipelineBuilder._shaderStages.push_back(
+    vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_FRAGMENT_BIT, texturedMeshShader));
+
+  //connect the new pipeline layout to the pipeline builder
+  pipelineBuilder._pipelineLayout = texturedPipeLayout;
+  VkPipeline texPipeline = pipelineBuilder.build_pipeline(_device, _renderPass);
+  create_material(texPipeline, texturedPipeLayout, "texturedmesh");
+
   //deleting all of the vulkan shaders
   vkDestroyShaderModule(_device, meshVertShader, nullptr);
   vkDestroyShaderModule(_device, meshFragShader, nullptr);
+  vkDestroyShaderModule(_device, texturedMeshShader, nullptr);
 
   //adding the pipelines to the deletion queue
   _mainDeletionQueue.push_function([=]() {
-    vkDestroyPipeline(_device, meshPipeline, nullptr);
+    vkDestroyPipeline(_device, texPipeline, nullptr);
+    vkDestroyPipelineLayout(_device, texturedPipeLayout, nullptr);
 
+    vkDestroyPipeline(_device, meshPipeline, nullptr);
     vkDestroyPipelineLayout(_device, meshPipelineLayout, nullptr);
   });
 }
@@ -693,6 +716,11 @@ void VulkanEngine::load_meshes() {
   //note that we are copying them. Eventually we will delete the hardcoded _monkey and _triangle meshes, so it's no problem now.
   _meshes["monkey"] = monkeyMesh;
   _meshes["triangle"] = triangleMesh;
+
+  Mesh lostEmpire{};
+  lostEmpire.load_from_obj("asset/model/lost_empire.obj", "asset/model");
+  upload_mesh(lostEmpire);
+  _meshes["empire"] = lostEmpire;
 }
 
 void VulkanEngine::upload_mesh(Mesh &mesh) {
@@ -852,6 +880,11 @@ void VulkanEngine::draw_objects(VkCommandBuffer cmd, RenderObject* first, int co
       vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, object.material->pipelineLayout, 0, 1, &get_current_frame().globalDescriptor, 1, &uniform_offset);
       //object data descriptor
       vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, object.material->pipelineLayout, 1, 1, &get_current_frame().objectDescriptor, 0, nullptr);
+
+      if (object.material->textureSet != VK_NULL_HANDLE) {
+        //texture descriptor
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, object.material->pipelineLayout, 2, 1, &object.material->textureSet, 0, nullptr);
+      }
     }
 
     MeshPushConstants constants;
@@ -881,6 +914,13 @@ void VulkanEngine::init_scene() {
 
   _renderables.push_back(monkey);
 
+  RenderObject map;
+  map.mesh = get_mesh("empire");
+  map.material = get_material("texturedmesh");
+  map.transformMatrix = glm::translate(glm::vec3{ 5,-10,0 }); //glm::mat4{ 1.0f };
+
+  _renderables.push_back(map);
+
   for (int x = -20; x <= 20; x++) {
     for (int y = -20; y <= 20; y++) {
 
@@ -894,6 +934,35 @@ void VulkanEngine::init_scene() {
       _renderables.push_back(tri);
     }
   }
+
+  Material* texturedMat =	get_material("texturedmesh");
+
+  VkDescriptorSetAllocateInfo allocInfo = {};
+  allocInfo.pNext = nullptr;
+  allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+  allocInfo.descriptorPool = _descriptorPool;
+  allocInfo.descriptorSetCount = 1;
+  allocInfo.pSetLayouts = &_singleTextureSetLayout;
+
+  vkAllocateDescriptorSets(_device, &allocInfo, &texturedMat->textureSet);
+
+  VkSamplerCreateInfo samplerInfo = vkinit::sampler_create_info(VK_FILTER_NEAREST);
+
+  VkSampler blockySampler;
+  vkCreateSampler(_device, &samplerInfo, nullptr, &blockySampler);
+
+  _mainDeletionQueue.push_function([=]() {
+    vkDestroySampler(_device, blockySampler, nullptr);
+  });
+
+  VkDescriptorImageInfo imageBufferInfo;
+  imageBufferInfo.sampler = blockySampler;
+  imageBufferInfo.imageView = _loadedTextures["empire_diffuse"].imageView;
+  imageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+  VkWriteDescriptorSet texture1 = vkinit::write_descriptor_image(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, texturedMat->textureSet, &imageBufferInfo, 0);
+
+  vkUpdateDescriptorSets(_device, 1, &texture1, 0, nullptr);
 }
 
 FrameData &VulkanEngine::get_current_frame() {
@@ -929,7 +998,8 @@ void VulkanEngine::init_descriptors() {
     {
       { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
       { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 10 },
-      { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10 }
+      { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10 },
+      { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 }
     };
 
   VkDescriptorPoolCreateInfo pool_info = {};
@@ -967,6 +1037,17 @@ void VulkanEngine::init_descriptors() {
   set2info.pBindings = &objectBind;
 
   vkCreateDescriptorSetLayout(_device, &set2info, nullptr, &_objectSetLayout);
+
+  //another set, one that holds a single texture
+  VkDescriptorSetLayoutBinding textureBind = vkinit::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0);
+  VkDescriptorSetLayoutCreateInfo set3info = {};
+  set3info.bindingCount = 1;
+  set3info.flags = 0;
+  set3info.pNext = nullptr;
+  set3info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  set3info.pBindings = &textureBind;
+
+  vkCreateDescriptorSetLayout(_device, &set3info, nullptr, &_singleTextureSetLayout);
 
   const size_t sceneParamBufferSize = FRAME_OVERLAP * pad_uniform_buffer_size(sizeof(GPUSceneData));
   _sceneParameterBuffer = create_buffer(sceneParamBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
@@ -1029,8 +1110,11 @@ void VulkanEngine::init_descriptors() {
 
   _mainDeletionQueue.push_function([&]() {
     vmaDestroyBuffer(_allocator, _sceneParameterBuffer._buffer, _sceneParameterBuffer._allocation);
+
     vkDestroyDescriptorSetLayout(_device, _globalSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(_device, _objectSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(_device, _singleTextureSetLayout, nullptr);
+
     vkDestroyDescriptorPool(_device, _descriptorPool, nullptr);
 
     for (int i = 0; i < FRAME_OVERLAP; i++) {
