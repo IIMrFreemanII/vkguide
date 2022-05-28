@@ -11,6 +11,12 @@
 #include "vk_types.h"
 #include "vk_mesh.h"
 
+struct UploadContext {
+  VkFence _uploadFence;
+  VkCommandPool _commandPool;
+  VkCommandBuffer _commandBuffer;
+};
+
 struct GPUObjectData{
   glm::mat4 modelMatrix;
 };
@@ -103,6 +109,9 @@ constexpr uint32_t FRAME_OVERLAP = 2;
 
 class VulkanEngine {
 public:
+  UploadContext _uploadContext;
+  void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
+
   GPUSceneData _sceneParameters;
   AllocatedBuffer _sceneParameterBuffer;
 
