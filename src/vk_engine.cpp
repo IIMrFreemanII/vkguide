@@ -9,6 +9,7 @@
 #include "vk_engine.h"
 #include "vk_types.h"
 #include "vk_initializers.h"
+#include "vk_textures.h"
 
 
 void VulkanEngine::init() {
@@ -42,6 +43,8 @@ void VulkanEngine::init() {
   init_descriptors();
 
   init_pipelines();
+
+  load_images();
 
   load_meshes();
 
@@ -1071,6 +1074,21 @@ void VulkanEngine::immediate_submit(std::function<void(VkCommandBuffer)> &&funct
 
   // reset the command buffers inside the command pool
   vkResetCommandPool(_device, _uploadContext._commandPool, 0);
+}
+
+void VulkanEngine::load_images() {
+  Texture lostEmpire;
+
+  vkutil::load_image_from_file(*this, "asset/model/lost_empire-RGBA.png", lostEmpire.image);
+
+  VkImageViewCreateInfo imageinfo = vkinit::imageview_create_info(VK_FORMAT_R8G8B8A8_SRGB, lostEmpire.image._image, VK_IMAGE_ASPECT_COLOR_BIT);
+  vkCreateImageView(_device, &imageinfo, nullptr, &lostEmpire.imageView);
+
+  _mainDeletionQueue.push_function([=]() {
+    vkDestroyImageView(_device, lostEmpire.imageView, nullptr);
+  });
+
+  _loadedTextures["empire_diffuse"] = lostEmpire;
 }
 
 VkPipeline PipelineBuilder::build_pipeline(VkDevice device, VkRenderPass pass) {

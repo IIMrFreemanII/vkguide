@@ -3,6 +3,7 @@
 #include <vector>
 #include <deque>
 #include <functional>
+#include <unordered_map>
 
 #include <glm/glm.hpp>
 #include <VkBootstrap.h>
@@ -10,6 +11,11 @@
 
 #include "vk_types.h"
 #include "vk_mesh.h"
+
+struct Texture {
+  AllocatedImage image;
+  VkImageView imageView;
+};
 
 struct UploadContext {
   VkFence _uploadFence;
@@ -109,6 +115,10 @@ constexpr uint32_t FRAME_OVERLAP = 2;
 
 class VulkanEngine {
 public:
+  //texture hashmap
+  std::unordered_map<std::string, Texture> _loadedTextures;
+  void load_images();
+
   UploadContext _uploadContext;
   void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
 
@@ -223,9 +233,11 @@ private:
 
   void upload_mesh(Mesh& mesh);
 
-  AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
-
   void init_descriptors();
+
+public:
+
+  AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
 
   size_t pad_uniform_buffer_size(size_t originalSize);
 };
